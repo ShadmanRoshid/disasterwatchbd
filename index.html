@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DisasterWatch BD — Bangladesh Emergency Response</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+
+    <!-- ═══ HEADER ═══ -->
+    <header>
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-dot"></div>
+          DISASTERWATCH BD
+        </div>
+        <nav class="nav-tabs">
+          <button class="nav-tab active" onclick="showPage('dashboard',this)">Dashboard</button>
+          <button class="nav-tab bt-tab" onclick="showPage('bluetooth',this)">📡 Mesh Network</button>
+        </nav>
+      </div>
+      <div class="header-right">
+        <button class="btn-help" onclick="openHelp()">SOS / HELP</button>
+        <div style="position:relative">
+          <button class="notif-btn" onclick="toggleNotif()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <div class="notif-badge"></div>
+          </button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-header">
+              <span class="notif-header-title">Alerts</span>
+              <button class="clear-btn" onclick="clearNotifs()">Clear all</button>
+            </div>
+            <div class="notif-item"><div class="notif-icon">🌊</div><div><div class="notif-text">Flood warning upgraded to RED in Sylhet Division</div><div class="notif-time">3 min ago</div></div></div>
+            <div class="notif-item"><div class="notif-icon">🔴</div><div><div class="notif-text">Aftershock M 5.2 detected — Dauki Fault</div><div class="notif-time">17 min ago</div></div></div>
+            <div class="notif-item"><div class="notif-icon">📡</div><div><div class="notif-text">2 new devices joined your mesh network</div><div class="notif-time">34 min ago</div></div></div>
+            <div class="notif-item"><div class="notif-icon">🏥</div><div><div class="notif-text">Field Medical Post — Golapganj now operational</div><div class="notif-time">1h ago</div></div></div>
+          </div>
+        </div>
+        <div class="profile-wrap">
+          <button class="profile-btn" onclick="toggleDropdown()">AK</button>
+          <div class="dropdown" id="profileDropdown">
+            <div class="dropdown-item">👤 My Profile</div>
+            <div class="dropdown-item">⚙️ Settings</div>
+            <div class="dropdown-item">📡 Mesh ID: BD-7741</div>
+            <hr class="dropdown-sep"/>
+            <div class="dropdown-item" style="color:var(--red)">🚪 Sign Out</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══ TICKER ═══ -->
+    <div class="ticker">
+      <div class="ticker-label">LIVE ALERTS</div>
+      <div class="ticker-scroll" id="tickerScroll">
+        <span>SYLHET M8.1 EARTHQUAKE — 72H POST EVENT — AFTERSHOCKS ACTIVE</span>
+        <span>FLOOD WARNING RED — SURMA RIVER — 3 EMBANKMENT BREACHES</span>
+        <span>HAKALUKI HAOR SEVERELY FLOODED — VILLAGES ISOLATED</span>
+        <span>CYCLONE WATCH ACTIVE — BAY OF BENGAL — CHATTOGRAM COAST</span>
+        <span>ARMY RESCUE BOATS DEPLOYED — SUNAMGANJ DISTRICT</span>
+        <span>OSMANI HOSPITAL NON-FUNCTIONAL — REDIRECT TO FIELD POSTS</span>
+        <span>📡 MESH NETWORK ACTIVE — 14 DEVICES IN YOUR AREA</span>
+        <!-- duplicate for seamless loop -->
+        <span>SYLHET M8.1 EARTHQUAKE — 72H POST EVENT — AFTERSHOCKS ACTIVE</span>
+        <span>FLOOD WARNING RED — SURMA RIVER — 3 EMBANKMENT BREACHES</span>
+        <span>HAKALUKI HAOR SEVERELY FLOODED — VILLAGES ISOLATED</span>
+        <span>CYCLONE WATCH ACTIVE — BAY OF BENGAL — CHATTOGRAM COAST</span>
+        <span>ARMY RESCUE BOATS DEPLOYED — SUNAMGANJ DISTRICT</span>
+        <span>OSMANI HOSPITAL NON-FUNCTIONAL — REDIRECT TO FIELD POSTS</span>
+        <span>📡 MESH NETWORK ACTIVE — 14 DEVICES IN YOUR AREA</span>
+      </div>
+    </div>
+
+    <main>
+      <!-- ════════════════════════ DASHBOARD PAGE ════════════════════════ -->
+      <div class="page active" id="page-dashboard">
+        <div class="hero">
+          <div class="map-area">
+            <div class="map-header">
+              <div class="map-title">LIVE SITUATION MAP</div>
+              <div class="map-subtitle">Sylhet Crisis Zone</div>
+            </div>
+            <div class="map-tabs">
+              <button class="map-tab active" onclick="setView('sylhet',this)">Sylhet Crisis</button>
+              <button class="map-tab" onclick="setView('bd',this)">Bangladesh</button>
+            </div>
+            <div id="leaflet-map"></div>
+            <div class="map-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#e24b4a"></div>Urban Collapse Zone</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#ef9f27"></div>High Damage Zone</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#378add"></div>Flood Zone</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;border-radius:0"></div>Fault Line</div>
+            </div>
+          </div>
+
+          <div class="sidebar">
+            <div class="sidebar-section">
+              <div class="sidebar-label">Live Statistics</div>
+              <div class="stats-grid">
+                <div class="stat-box"><div class="stat-num red">2,847</div><div class="stat-label">Casualties</div></div>
+                <div class="stat-box"><div class="stat-num amber">124,000</div><div class="stat-label">Displaced</div></div>
+                <div class="stat-box"><div class="stat-num">47</div><div class="stat-label">Shelters</div></div>
+                <div class="stat-box"><div class="stat-num" style="color:var(--bt)" id="dashPeerCount">14</div><div class="stat-label">Mesh Peers</div></div>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <div class="sidebar-label">Active Alerts</div>
+              <div class="alert-card critical"><div class="alert-top"><span class="alert-type critical">Critical</span><span class="alert-time">3 min ago</span></div><div class="alert-title">Earthquake M 8.1 — Aftershocks</div><div class="alert-loc">📍 Sylhet Division</div></div>
+              <div class="alert-card warning"><div class="alert-top"><span class="alert-type warning">Warning</span><span class="alert-time">12 min ago</span></div><div class="alert-title">Flood Red Alert — Surma River</div><div class="alert-loc">📍 Sylhet City, Sunamganj</div></div>
+              <div class="alert-card watch"><div class="alert-top"><span class="alert-type watch">Watch</span><span class="alert-time">1h ago</span></div><div class="alert-title">Cyclone Watch — Bay of Bengal</div><div class="alert-loc">📍 Chattogram, Cox's Bazar</div></div>
+            </div>
+            <div class="sidebar-section">
+              <div class="sidebar-label">Response Readiness</div>
+              <div class="prep-item"><div class="prep-top"><span>Search &amp; Rescue</span><span class="prep-pct">78%</span></div><div class="prep-bar"><div class="prep-fill" style="width:78%;background:#3b6d11"></div></div></div>
+              <div class="prep-item"><div class="prep-top"><span>Medical Supplies</span><span class="prep-pct">54%</span></div><div class="prep-bar"><div class="prep-fill" style="width:54%;background:var(--amber)"></div></div></div>
+              <div class="prep-item"><div class="prep-top"><span>Evacuation Routes</span><span class="prep-pct">31%</span></div><div class="prep-bar"><div class="prep-fill" style="width:31%;background:var(--red)"></div></div></div>
+              <div class="prep-item"><div class="prep-top"><span>Food &amp; Water</span><span class="prep-pct">66%</span></div><div class="prep-bar"><div class="prep-fill" style="width:66%;background:#3b6d11"></div></div></div>
+            </div>
+            <div class="sidebar-section">
+              <div class="sidebar-label">Weather — Sylhet <span id="weatherStatus" style="font-size:8px;color:var(--text-muted);letter-spacing:0"></span></div>
+              <div id="weatherGrid">
+                <div class="weather-loading">⏳ Loading live data…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEWS -->
+        <section class="news-section" id="news">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">LATEST <span>REPORTS</span></h2>
+              <p class="section-subtitle">Real-time updates from verified and community sources</p>
+            </div>
+            <div class="news-filter">
+              <button class="filter-btn active" onclick="filterNews(this,'all')">All</button>
+              <button class="filter-btn" onclick="filterNews(this,'verified')">Verified</button>
+              <button class="filter-btn" onclick="filterNews(this,'rumor')">Rumors</button>
+            </div>
+          </div>
+          <div class="news-grid" id="newsGrid">
+            <article class="news-card" data-rumors="299" data-cat="verified">
+              <div class="news-img" style="background-image:url('https://images.unsplash.com/photo-1547619292-24040a15af1d?q=80&w=500&auto=format&fit=crop')">
+                <div class="rumor-stamp">RUMOR</div>
+                <span class="news-category cat-flood">EMERGENCY</span>
+              </div>
+              <div class="news-body">
+                <div class="news-meta"><span>SOURCE: BSS NEWS</span><span>12 MINS AGO</span></div>
+                <h3 class="news-title">Flash Floods Breach Embankments in Sylhet Region</h3>
+                <p class="news-excerpt">Over 50 villages submerged as Surma river levels rise rapidly after heavy rainfall and earthquake damage to flood barriers…</p>
+              </div>
+              <div class="news-interaction-bar">
+                <button class="vote-btn up" onclick="handleVote(this,1)">▲ <span class="count">842</span></button>
+                <button class="vote-btn down" onclick="handleVote(this,-1)">▼ <span class="count">14</span></button>
+                <button class="rumor-trigger-btn" onclick="openRumorModal(this)">RUMOR (<span class="rcount">299</span>)</button>
+              </div>
+              <div class="news-footer"><a href="#" class="news-read">READ FULL STORY →</a></div>
+            </article>
+
+            <article class="news-card" data-rumors="45" data-cat="verified">
+              <div class="news-img" style="background-image:url('https://images.unsplash.com/photo-1504370805625-d32c54b16100?q=80&w=500&auto=format&fit=crop')">
+                <div class="rumor-stamp">RUMOR</div>
+                <span class="news-category cat-heat">HEALTH</span>
+              </div>
+              <div class="news-body">
+                <div class="news-meta"><span>SOURCE: DAILY STAR</span><span>1 HOUR AGO</span></div>
+                <h3 class="news-title">Dhaka Records Hottest Day of the Season at 40.2°C</h3>
+                <p class="news-excerpt">Meteorology department warns of heatwave persistence for the next 72 hours across the capital and surrounding districts…</p>
+              </div>
+              <div class="news-interaction-bar">
+                <button class="vote-btn up" onclick="handleVote(this,1)">▲ <span class="count">312</span></button>
+                <button class="vote-btn down" onclick="handleVote(this,-1)">▼ <span class="count">7</span></button>
+                <button class="rumor-trigger-btn" onclick="openRumorModal(this)">RUMOR (<span class="rcount">45</span>)</button>
+              </div>
+              <div class="news-footer"><a href="#" class="news-read">READ FULL STORY →</a></div>
+            </article>
+
+            <article class="news-card" data-rumors="12" data-cat="verified">
+              <div class="news-img" style="background-image:url('https://images.unsplash.com/photo-1586105251261-72a756497a11?q=80&w=500&auto=format&fit=crop')">
+                <div class="rumor-stamp">RUMOR</div>
+                <span class="news-category cat-relief">RELIEF</span>
+              </div>
+              <div class="news-body">
+                <div class="news-meta"><span>SOURCE: UN OCHA</span><span>2 HOURS AGO</span></div>
+                <h3 class="news-title">UNHCR Deploys Emergency Relief Convoy to Sylhet</h3>
+                <p class="news-excerpt">14 trucks carrying food, medicine, and temporary shelter supplies are en route to the Sylhet crisis zone via Dhaka-Sylhet highway…</p>
+              </div>
+              <div class="news-interaction-bar">
+                <button class="vote-btn up" onclick="handleVote(this,1)">▲ <span class="count">567</span></button>
+                <button class="vote-btn down" onclick="handleVote(this,-1)">▼ <span class="count">3</span></button>
+                <button class="rumor-trigger-btn" onclick="openRumorModal(this)">RUMOR (<span class="rcount">12</span>)</button>
+              </div>
+              <div class="news-footer"><a href="#" class="news-read">READ FULL STORY →</a></div>
+            </article>
+
+            <article class="news-card featured" data-rumors="88" data-cat="verified">
+              <div class="news-img" style="background-image:url('https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=800&auto=format&fit=crop')">
+                <div class="rumor-stamp">RUMOR</div>
+                <span class="news-category cat-warn">CRITICAL</span>
+              </div>
+              <div class="news-body">
+                <div class="news-meta"><span>SOURCE: ARMY MEDIA CELL</span><span>45 MINS AGO</span></div>
+                <h3 class="news-title">Army Deploys 8 Rescue Boats to Isolated Villages in Sunamganj — Road Access Fully Cut Off</h3>
+                <p class="news-excerpt">Bangladesh Army confirmed deployment of 8 motorised rescue boats to reach an estimated 12,000 people stranded in low-lying villages around Sunamganj following complete road network failure. Army engineers are assessing bridge integrity along the N2 corridor…</p>
+              </div>
+              <div class="news-interaction-bar">
+                <button class="vote-btn up" onclick="handleVote(this,1)">▲ <span class="count">1,204</span></button>
+                <button class="vote-btn down" onclick="handleVote(this,-1)">▼ <span class="count">22</span></button>
+                <button class="rumor-trigger-btn" onclick="openRumorModal(this)">RUMOR (<span class="rcount">88</span>)</button>
+              </div>
+              <div class="news-footer"><a href="#" class="news-read">READ FULL STORY →</a></div>
+            </article>
+
+            <article class="news-card" data-rumors="22" data-cat="verified">
+              <div class="news-img" style="background-image:url('https://images.unsplash.com/photo-1530026405186-ed1f139313f8?q=80&w=500&auto=format&fit=crop')">
+                <div class="rumor-stamp">RUMOR</div>
+                <span class="news-category cat-cyclone">CYCLONE</span>
+              </div>
+              <div class="news-body">
+                <div class="news-meta"><span>SOURCE: BMD</span><span>3 HOURS AGO</span></div>
+                <h3 class="news-title">Cyclone Watch Issued for Bay of Bengal — Chattogram Coast on Alert</h3>
+                <p class="news-excerpt">Bangladesh Meteorological Department has issued a cyclone watch for coastal districts. Wind speed projected at 120 km/h…</p>
+              </div>
+              <div class="news-interaction-bar">
+                <button class="vote-btn up" onclick="handleVote(this,1)">▲ <span class="count">445</span></button>
+                <button class="vote-btn down" onclick="handleVote(this,-1)">▼ <span class="count">9</span></button>
+                <button class="rumor-trigger-btn" onclick="openRumorModal(this)">RUMOR (<span class="rcount">22</span>)</button>
+              </div>
+              <div class="news-footer"><a href="#" class="news-read">READ FULL STORY →</a></div>
+            </article>
+          </div>
+          <div class="see-more-container">
+            <button class="btn-see-more" onclick="loadMoreNews()">LOAD MORE REPORTS</button>
+          </div>
+        </section>
+
+        <!-- PROTOCOLS -->
+        <section class="protocols-section">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">EMERGENCY <span>PROTOCOLS</span></h2>
+              <p class="section-subtitle">Official procedures for different disaster scenarios</p>
+            </div>
+          </div>
+          <div class="protocols-grid">
+            <div class="protocol-card"><span class="protocol-icon">🌊</span><div class="protocol-title">Flood Response</div><div class="protocol-desc">Move to higher ground immediately. Do not attempt to cross flooded roads. Call Army ghat at Khadim Nagar for boat assistance.</div></div>
+            <div class="protocol-card"><span class="protocol-icon">🏚️</span><div class="protocol-title">Earthquake</div><div class="protocol-desc">Drop, cover, hold. After shaking stops, exit carefully avoiding unstable structures. Do not use elevators. Check for gas leaks.</div></div>
+            <div class="protocol-card"><span class="protocol-icon">🌀</span><div class="protocol-title">Cyclone</div><div class="protocol-desc">Evacuate coastal areas immediately. Seek reinforced concrete shelter. Stay away from windows. Listen to Bangladesh Betar.</div></div>
+            <div class="protocol-card"><span class="protocol-icon">📡</span><div class="protocol-title">No Signal?</div><div class="protocol-desc">Activate Mesh Network mode. Your phone can relay messages to connected peers within 100m even without mobile data or WiFi.</div></div>
+          </div>
+        </section>
+
+        <!-- SHELTERS -->
+        <section class="shelter-section">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">SHELTER <span>LOCATIONS</span></h2>
+              <p class="section-subtitle">Verified emergency shelters — updated every 15 minutes</p>
+            </div>
+          </div>
+          <div style="background:rgba(163,45,45,0.07);border:1px solid rgba(226,75,74,0.25);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;line-height:1.7;color:var(--text-muted)">
+            <strong style="color:var(--red)">🏥 Medical Infrastructure Failure</strong> — MAG Osmani Medical College Hospital is NON-FUNCTIONAL. Redirect to: 🏥 Field Camp Golapganj (Operational) · 🏥 Army Unit Beanibazar (Emergency Surgery) · 🚁 Air Evac — Osmani Airport (Critical Only)
+          </div>
+          <table class="shelter-table">
+            <thead><tr><th>Shelter</th><th>Distance</th><th>Capacity</th><th>Occupancy</th><th>Route</th><th>Flood Risk</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Golapganj High School — SY-09</strong><div style="font-size:11px;color:var(--text-muted);margin-top:4px">📍 18km SE of Sylhet City</div></td><td>18km</td><td>800</td><td>620<div class="capacity-bar"><div class="cap-fill cap-amber" style="width:77%"></div></div></td><td><span style="color:#3b6d11;font-weight:600">✅ Accessible</span></td><td><span style="color:#ef9f27;font-weight:600">Moderate</span></td><td><span class="status-pill status-partial">Partial</span></td></tr>
+              <tr><td><strong>Beanibazar Govt. College — SY-14</strong><div style="font-size:11px;color:var(--text-muted);margin-top:4px">📍 34km East of Sylhet</div></td><td>34km</td><td>1,400</td><td>940<div class="capacity-bar"><div class="cap-fill cap-amber" style="width:67%"></div></div></td><td><span style="color:#3b6d11;font-weight:600">✅ Open Route</span></td><td><span style="color:#ef9f27;font-weight:600">Moderate</span></td><td><span class="status-pill status-open">Open</span></td></tr>
+              <tr><td><strong>Fenchuganj Technical School — SY-22</strong><div style="font-size:11px;color:var(--text-muted);margin-top:4px">📍 29km South of Sylhet</div></td><td>29km</td><td>1,100</td><td>1,032<div class="capacity-bar"><div class="cap-fill cap-red" style="width:94%"></div></div></td><td><span style="color:#ef9f27;font-weight:600">⚠ Limited</span></td><td><span style="color:var(--red);font-weight:600">High</span></td><td><span class="status-pill status-full">Near Full</span></td></tr>
+              <tr><td><strong>Companiganj Model School — SY-31</strong><div style="font-size:11px;color:var(--text-muted);margin-top:4px">📍 42km NE via N2</div></td><td>42km</td><td>600</td><td>214<div class="capacity-bar"><div class="cap-fill cap-green" style="width:36%"></div></div></td><td><span style="color:#3b6d11;font-weight:600">✅ Clear</span></td><td><span style="color:#3b6d11;font-weight:600">Low</span></td><td><span class="status-pill status-open">Open</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- ════════════════════════ BLUETOOTH MESH PAGE ════════════════════════ -->
+      <div class="page" id="page-bluetooth">
+        <div class="bt-page">
+          <div class="mesh-stats-bar">
+            <div class="mesh-stat"><div class="mesh-stat-icon">📡</div><div><div class="mesh-stat-num" id="peerCount">3</div><div class="mesh-stat-label">Connected Peers</div></div></div>
+            <div class="mesh-stat"><div class="mesh-stat-icon">🔗</div><div><div class="mesh-stat-num" id="hopCount">2</div><div class="mesh-stat-label">Mesh Hops</div></div></div>
+            <div class="mesh-stat"><div class="mesh-stat-icon">📨</div><div><div class="mesh-stat-num" id="msgCount">27</div><div class="mesh-stat-label">Messages Relayed</div></div></div>
+            <div class="mesh-stat"><div class="mesh-stat-icon">🌐</div><div><div class="mesh-stat-num" id="networkSize">14</div><div class="mesh-stat-label">Network Size</div></div></div>
+          </div>
+
+          <div class="bt-hero">
+            <div style="display:flex;flex-direction:column;gap:1.5rem">
+              <div class="bt-panel">
+                <div class="bt-panel-head">
+                  <span class="bt-panel-title">Network Topology</span>
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <span class="bt-badge scanning" id="scanBadge">● Scanning</span>
+                    <button class="bt-scan-btn scanning" id="scanBtn" onclick="toggleScan()">⏹ Stop Scan</button>
+                  </div>
+                </div>
+                <div class="bt-network-vis">
+                  <canvas id="networkCanvas"></canvas>
+                </div>
+              </div>
+
+              <div class="bt-panel">
+                <div class="bt-panel-head">
+                  <span class="bt-panel-title">Nearby Devices</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted)" id="deviceCountLabel">4 FOUND</span>
+                </div>
+                <div class="bt-device-list" id="deviceList"></div>
+              </div>
+            </div>
+
+            <div class="bt-panel" style="display:flex;flex-direction:column;height:calc(100vh - 86px - 4rem - 72px - 80px);min-height:500px">
+              <div class="mesh-chat-header">
+                <div class="mesh-members" id="meshAvatars"></div>
+                <div class="mesh-chat-info" style="margin-left:12px">
+                  <div class="mesh-chat-name">Mesh Group Chat</div>
+                  <div class="mesh-online" id="meshOnlineLabel">3 peers online</div>
+                </div>
+                <span class="socket-status" id="socketStatusBadge">SIMULATED</span>
+              </div>
+              <div class="mesh-messages" id="meshMessages"></div>
+              <div class="mesh-input-area">
+                <div class="mesh-input-row">
+                  <button class="mesh-attach-btn" onclick="document.getElementById('imgUploadInput').click()" title="Send Image">📷</button>
+                  <input type="file" id="imgUploadInput" accept="image/*" onchange="sendImage(event)"/>
+                  <input class="mesh-text-input" id="meshInput" placeholder="Type a message… broadcasts to all peers" onkeydown="if(event.key==='Enter')sendMeshMsg()"/>
+                  <button class="mesh-send-btn" onclick="sendMeshMsg()">SEND</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══ HELP MODAL ═══ -->
+    <div class="modal-overlay" id="helpModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-title">Emergency Help</div>
+          <button class="modal-close" onclick="closeHelp()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <div class="modal-section-title">Emergency Contacts</div>
+            <div class="sos-grid">
+              <div class="sos-card"><div class="sos-icon">🚨</div><div><div class="sos-label">National Emergency</div><div class="sos-num">999</div></div></div>
+              <div class="sos-card"><div class="sos-icon">🏥</div><div><div class="sos-label">BDRCS Hotline</div><div class="sos-num">01730-336699</div></div></div>
+              <div class="sos-card"><div class="sos-icon">🚒</div><div><div class="sos-label">Fire Service</div><div class="sos-num">199</div></div></div>
+              <div class="sos-card"><div class="sos-icon">⚓</div><div><div class="sos-label">Coast Guard</div><div class="sos-num">156</div></div></div>
+              <div class="sos-card"><div class="sos-icon">🏛️</div><div><div class="sos-label">DDM Control</div><div class="sos-num">02-9557091</div></div></div>
+              <div class="sos-card" onclick="showPage('bluetooth',document.querySelector('.bt-tab'));closeHelp()" style="border-color:var(--bt)"><div class="sos-icon">📡</div><div><div class="sos-label">Use Mesh Network</div><div class="sos-num" style="color:var(--bt)">No internet needed</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RUMOR MODAL ═══ -->
+    <div class="modal-overlay" id="rumorModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-title">Flag as Rumor</div>
+          <button class="modal-close" onclick="closeRumorModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <div class="modal-section-title">Why do you think this is a rumor?</div>
+            <div class="rumor-form">
+              <textarea id="rumorText" placeholder="Describe why this report may be inaccurate or unverified…"></textarea>
+              <button class="btn-help" onclick="submitRumor()" style="width:100%;text-align:center">SUBMIT FLAG</button>
+            </div>
+            <div class="rumor-comment-list" id="rumorComments">
+              <div class="fake-comment"><strong>Sayed K.:</strong> I was near this area and the numbers seem exaggerated — only 3 villages affected, not 50.</div>
+              <div class="fake-comment"><strong>Nadia R.:</strong> BSS hasn't published this officially on their site as of 30 mins ago.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ AI CHAT WIDGET ═══ -->
+    <div class="chat-float">
+      <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+          <div class="chat-avatar">AI</div>
+          <div class="chat-info">
+            <div class="chat-name">Emergency AI Assistant</div>
+            <div class="chat-status" id="aiChatStatus">Online · Powered by Claude</div>
+          </div>
+          <button class="chat-close" onclick="toggleChat()">✕</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg bot">
+            <div>Hello. I'm your AI emergency assistant for the Sylhet crisis. Ask me about shelters, evacuation routes, emergency procedures, or flood safety.</div>
+            <div class="msg-time">Now</div>
+          </div>
+        </div>
+        <div class="chat-footer">
+          <div class="quick-replies">
+            <button class="quick-reply" onclick="sendQuick('Nearest open shelter')">Nearest shelter</button>
+            <button class="quick-reply" onclick="sendQuick('Flood evacuation route')">Evacuation route</button>
+            <button class="quick-reply" onclick="sendQuick('Emergency numbers')">Emergency numbers</button>
+            <button class="quick-reply" onclick="sendQuick('What to do during earthquake aftershock')">Aftershock tips</button>
+          </div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chatInput" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')sendChat()"/>
+            <button class="chat-send" id="chatSendBtn" onclick="sendChat()">SEND</button>
+          </div>
+        </div>
+      </div>
+      <button class="chat-toggle" onclick="toggleChat()">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <div class="chat-notif" id="chatNotifBadge">1</div>
+      </button>
+    </div>
+
+    <!-- ═══ SCRIPTS ═══ -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
